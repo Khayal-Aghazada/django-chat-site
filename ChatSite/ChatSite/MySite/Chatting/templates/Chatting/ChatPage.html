@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Chat Site</title>
+    <style>
+      /* Use full viewport height and flex layout to stack sections */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+
+        height: 100vh;            /* Fill entire browser window height */
+        display: flex;            /* Lay out in columns (top to bottom) */
+        flex-direction: column;
+      }
+
+      /* Header area at the top - does not scroll */
+      .header {
+        background-color: #4e73df; 
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+        flex-shrink: 0;  /* Keep at natural height, never shrink */
+      }
+      
+      .header h1 {
+        margin: 0;
+      }
+
+      .logout-link {
+        text-decoration: none;
+        color: #ffd700; 
+        font-weight: bold;
+      }
+      .logout-link:hover {
+        color: #fff;
+        text-decoration: underline;
+      }
+
+      /* The middle section: a container for the chat messages that scrolls */
+      .chat-container {
+        flex: 1;          /* Grow to fill remaining vertical space */
+        max-width: 600px; /* Optional: limit width of chat area */
+        width: 100%;
+        margin: 0 auto;   /* Center horizontally */
+
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* so only #id_chat_item_container can scroll */
+      }
+
+      /* Scrollable box for messages */
+      #id_chat_item_container {
+        flex: 1;               /* Fill up vertical space in .chat-container */
+        overflow-y: auto;      /* Make only this section scroll vertically */
+        padding: 20px;
+        font-size: 20px;
+      }
+
+      .message {
+        margin-bottom: 10px;
+        background: #eaeaea;
+        padding: 10px;
+        border-radius: 4px;
+      }
+
+      /* Input box is placed *below* the .chat-container (so it doesn't scroll) */
+      .input-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;        /* Don’t let it shrink when window resizes */
+        padding: 10px;
+        background-color: #f2f2f2;
+      }
+
+      /* Put a smaller container around the input & button
+         so they aren't super wide at larger screen sizes. */
+      .input-box {
+        display: flex;
+        width: 600px;          /* same max width as chat, or pick your own */
+        max-width: 95%;        /* fallback on smaller screens */
+      }
+
+      #id_message_send_input {
+        flex: 1;
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #ccc;
+        border-radius: 4px 0 0 4px;
+        outline: none;
+      }
+
+      #id_message_send_button {
+        background-color: #4e73df;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 0 4px 4px 0;
+      }
+      #id_message_send_button:hover {
+        background-color: #2e59d9;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <h1>Welcome! {{ request.user }}</h1>
+      {% if request.user.is_authenticated %}
+      <p>
+        Logout the chat Page 
+        <a class="logout-link" href="{% url 'logout-user' %}">Logout</a>
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Scrollable messages box -->
+    <div class="chat-container">
+      <div id="id_chat_item_container">
+        <!-- Messages appear here. This area scrolls. -->
+      </div>
+    </div>
+
+    <!-- Input container at the bottom of the page, outside the scrollable area -->
+    <div class="input-container">
+      <div class="input-box">
+        <input
+          type="text"
+          id="id_message_send_input"
+          placeholder="Type your message..."
+        />
+        <button type="submit" id="id_message_send_button">Send Message</button>
+      </div>
+    </div>
+
+    <script>
+      const chatSocket = new WebSocket("ws://" + window.location.host + "/");
+
+      chatSocket.onopen = function () {
+        console.log("WebSocket connection successfully established!");
+      };
+
+      chatSocket.onclose = function () {
+        console.log("Something unexpected happened!");
+      };
+
+      document.querySelector("#id_message_send_input").focus();
+
+      // Send message when pressing Enter
+      document.querySelector("#id_message_send_input").onkeyup = function (e) {
+        if (e.keyCode === 13) {
+          document.querySelector("#id_message_send_button").click();
+        }
+      };
+
+      // Send message on button click
+      document.querySelector("#id_message_send_button").onclick = function () {
+        const messageInput = document.querySelector("#id_message_send_input").value;
+        chatSocket.send(
+          JSON.stringify({
+            message: messageInput,
+            username: "{{ request.user.username }}"
+          })
+        );
+      };
+
+      // Receive messages
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        const chatContainer = document.querySelector("#id_chat_item_container");
+
+        // Create a new message node
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "message";
+        msgDiv.innerHTML = data.username + " : " + data.message;
+
+        // Add new message to the chat area
+        chatContainer.appendChild(msgDiv);
+
+        // Clear the input
+        document.querySelector("#id_message_send_input").value = "";
+
+        // Auto-scroll to bottom of the chat box
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      };
+    </script>
+  </body>
+</html>
