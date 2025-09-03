@@ -31,12 +31,12 @@ Welcome to **django-chat-site**, a simple but powerful real-time chat app where 
 
 ## 📦 Tech Stack
 
-* **Python 3.x**
-* **Django 4.x**
-* **Django Channels 4.x**
-* **Redis** (optional for production channel layer)
+* **Python
+* **Django
+* **Django Channels
+* **Redis**
 * **HTML5 / CSS3 / JavaScript**
-* **Bootstrap 5** (for styling)
+* **Bootstrap 5**
 
 ---
 
